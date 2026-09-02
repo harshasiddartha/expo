@@ -80,7 +80,7 @@ describe('useKeyboardManager', () => {
 
       dismissSpy.mockClear();
 
-      rerender({ enabled: false, focused: false });
+      rerender({ enabled: true, focused: false });
 
       expect(dismissSpy).toHaveBeenCalled();
 
