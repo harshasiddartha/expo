@@ -34,6 +34,7 @@
 
 ### 🐛 Bug fixes
 
+- [iOS] Views hosted in `RNHostView` now report their position from the host's own frame, so `measure()` and touch targets are correct when SwiftUI insets the content, for example on a `Host` with `safeArea`. ([#TBD](https://github.com/expo/expo/pull/TBD) by [@nishan](https://github.com/intergalacticspacehighway))
 - [Android] Fixed a `Text` or an `Icon` with no explicit color rendering black inside `Host`, which made it unreadable in the dark color scheme. `Host` now provides `LocalContentColor` from the color scheme. ([#49697](https://github.com/expo/expo/pull/49697) by [@expo-bot](https://github.com/expo-bot))
 - [iOS][Android] Fixed a `matchContents` `RNHostView` inside a `matchContents` `Host` growing the layout on every pass. ([#49483](https://github.com/expo/expo/pull/49483) by [@intergalacticspacehighway](https://github.com/intergalacticspacehighway))
 - [iOS] Fix modifier application rebuilding a fresh `AnyViewModifier` every body evaluation, which defeated AttributeGraph subtree pruning during scroll. ([#48426](https://github.com/expo/expo/pull/48426) by [@wielski](https://github.com/wielski))

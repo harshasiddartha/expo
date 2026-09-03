@@ -12,6 +12,7 @@
 
 ### 🎉 New features
 
+- [iOS] Added the `expoHostingView` SwiftUI environment value, a weak reference to the UIKit view hosting a SwiftUI tree, so hosted content can convert its geometry into the frame React Native laid out. ([#TBD](https://github.com/expo/expo/pull/TBD) by [@nishan](https://github.com/intergalacticspacehighway))
 - [iOS] Added `ExpoSwiftUI.SafeAreaRegionsProviding`, a props protocol that names the safe-area regions a hosting controller applies to its SwiftUI root. `SafeAreaControllable`, which removed regions from SwiftUI's default, is deprecated in its favor. ([#TBD](https://github.com/expo/expo/pull/TBD) by [@nishan](https://github.com/intergalacticspacehighway))
 - [Android] Added a `loadImageForManipulationFromURL` overload to `ImageLoaderInterface` that decodes the image within the given `maxWidth`/`maxHeight` bounds. ([#47877](https://github.com/expo/expo/pull/47877) by [@jiunshinn](https://github.com/jiunshinn))
 - Add `useReleasingSharedObjectWithLifecycle` hook. ([#46494](https://github.com/expo/expo/pull/46494) by [@behenate](https://github.com/behenate))
