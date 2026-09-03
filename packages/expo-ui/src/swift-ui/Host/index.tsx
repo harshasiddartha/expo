@@ -3,9 +3,17 @@ import type { Ref } from 'react';
 import { I18nManager, type ColorValue, type StyleProp, type ViewStyle } from 'react-native';
 
 import { TextInputHostProvider, useTextInputHostRef } from '../../keyboard';
+import {
+  resolveHostSafeAreaMode,
+  type HostIgnoreSafeArea,
+  type HostSafeArea,
+  type HostSafeAreaMode,
+} from '../../universal/Host/safeArea';
 import { useMergeRefs } from '../../utils/useMergeRefs';
 import { createViewModifierEventListener } from '../modifiers/utils';
 import { type CommonViewModifierProps } from '../types';
+
+export type { HostIgnoreSafeArea, HostSafeArea } from '../../universal/Host/safeArea';
 
 export interface HostProps extends CommonViewModifierProps {
   /**
@@ -47,12 +55,21 @@ export interface HostProps extends CommonViewModifierProps {
   layoutDirection?: 'leftToRight' | 'rightToLeft';
 
   /**
-   * Controls which safe area regions the SwiftUI hosting view should ignore.
-   * - `'all'` - ignores all safe area insets, including the keyboard.
-   * - `'container'` - ignores only the container safe area (notch, home indicator, status and navigation bars). The keyboard safe area still applies.
-   * - `'keyboard'` - ignores only the keyboard safe area.
+   * Enables SwiftUI's safe area handling inside the host view. By default, the host lays out like any other
+   * React Native view: its content starts at the frame origin and the app is expected to handle the safe area
+   * and the keyboard, for example with `react-native-safe-area-context` or `react-native-keyboard-controller`.
+   * Use it for a host that fills the available space and renders scrolling content or text inputs, such as
+   * `Form` or `List`. With `matchContents`, the host grows by the applied insets so that its frame in the
+   * React Native view tree still contains the content.
+   * @default false
    */
-  ignoreSafeArea?: 'all' | 'container' | 'keyboard';
+  safeArea?: HostSafeArea;
+
+  /**
+   * @deprecated Use `safeArea` instead. `ignoreSafeArea` removed regions from SwiftUI's default
+   * handling; `safeArea` enables them, and no region is applied by default.
+   */
+  ignoreSafeArea?: HostIgnoreSafeArea;
 
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -62,12 +79,15 @@ export interface HostProps extends CommonViewModifierProps {
 }
 
 const HostNativeView: React.ComponentType<
-  HostProps & {
+  Omit<HostProps, 'safeArea' | 'ignoreSafeArea'> & {
     matchContentsVertical?: boolean;
     matchContentsHorizontal?: boolean;
+    safeArea: HostSafeAreaMode;
     ref?: Ref<any>;
   }
 > = requireNativeView('ExpoUI', 'HostView');
+
+let didWarnAboutIgnoreSafeArea = false;
 
 /**
  * A hosting component for SwiftUI views.
@@ -76,6 +96,7 @@ export function Host(props: HostProps) {
   const {
     matchContents,
     onLayoutContent,
+    safeArea,
     ignoreSafeArea,
     modifiers,
     layoutDirection,
@@ -85,6 +106,17 @@ export function Host(props: HostProps) {
   } = props;
   const hostRef = useTextInputHostRef();
   const mergedRef = useMergeRefs(ref, hostRef);
+  if (
+    __DEV__ &&
+    ignoreSafeArea !== undefined &&
+    safeArea === undefined &&
+    !didWarnAboutIgnoreSafeArea
+  ) {
+    didWarnAboutIgnoreSafeArea = true;
+    console.warn(
+      'The `ignoreSafeArea` prop of `Host` is deprecated. A `Host` applies no safe-area insets by default; use `safeArea` to enable the regions SwiftUI should apply.'
+    );
+  }
 
   return (
     <TextInputHostProvider hostRef={hostRef}>
@@ -101,7 +133,7 @@ export function Host(props: HostProps) {
         layoutDirection={
           layoutDirection ?? (I18nManager.getConstants().isRTL ? 'rightToLeft' : 'leftToRight')
         }
-        ignoreSafeArea={ignoreSafeArea}
+        safeArea={resolveHostSafeAreaMode(safeArea, ignoreSafeArea)}
         seedColor={seedColor}
         {...restProps}
         ref={mergedRef}

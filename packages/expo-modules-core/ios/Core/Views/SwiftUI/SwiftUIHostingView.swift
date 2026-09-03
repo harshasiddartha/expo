@@ -61,6 +61,11 @@ extension ExpoSwiftUI {
     private let hostingController: UIHostingController<AnyView>
 
     /**
+     The last size a content-sized axis asked for, before the safe-area insets are added.
+     */
+    private var requestedStyleSize: (width: NSNumber?, height: NSNumber?)?
+
+    /**
      Initializes a SwiftUI hosting view with the given SwiftUI view type.
      */
     init(viewType: ContentView.Type, props: Props, appContext: AppContext) {
@@ -76,12 +81,20 @@ extension ExpoSwiftUI {
 
       super.init(appContext: appContext)
 
+      // Props still hold their defaults here; the first `updateProps` brings the JS value. Applying
+      // the default now replaces the controller's implicit `.all` before the first layout, so the
+      // root is never laid out with insets it is not meant to have.
+      if let regionsProps = props as? SafeAreaRegionsProviding {
+        hostingController.setSafeAreaRegions(regionsProps.safeAreaRegions)
+      }
+
       shadowNodeProxy.setViewSize = { [weak self] size in
         self?.setViewSize(size)
       }
 
       shadowNodeProxy.setStyleSize = { [weak self] width, height in
-        self?.setStyleSize(width, height: height)
+        self?.requestedStyleSize = (width, height)
+        self?.applyRequestedStyleSize()
       }
 
       props.shadowNodeProxy = shadowNodeProxy
@@ -116,8 +129,14 @@ extension ExpoSwiftUI {
         log.error("Updating props for \(ContentView.self) has failed: \(error.localizedDescription)")
       }
 
-      if let safeAreaProps = props as? SafeAreaControllable {
+      let appliedContainerInsets = appliesContainerInsets
+      if let regionsProps = props as? SafeAreaRegionsProviding {
+        hostingController.setSafeAreaRegions(regionsProps.safeAreaRegions)
+      } else if let safeAreaProps = props as? SafeAreaControllable {
         hostingController.setSafeAreaRegions(ignoring: safeAreaProps.ignoreSafeArea)
+      }
+      if appliesContainerInsets != appliedContainerInsets {
+        applyRequestedStyleSize()
       }
     }
 
@@ -149,6 +168,48 @@ extension ExpoSwiftUI {
       super.layoutSubviews()
       // TODO: Use updateLayoutMetrics from RN. Add support in ExpoFabricView.
       setupHostingViewConstraints()
+    }
+
+    #if os(iOS) || os(tvOS)
+    public override func safeAreaInsetsDidChange() {
+      super.safeAreaInsetsDidChange()
+      applyRequestedStyleSize()
+    }
+    #endif
+
+    /**
+     Whether SwiftUI applies the container insets inside this view. Content-sized axes grow by them.
+     */
+    private var appliesContainerInsets: Bool {
+      #if os(iOS) || os(tvOS)
+      if #available(iOS 16.4, tvOS 16.4, *) {
+        return hostingController.safeAreaRegions.contains(.container)
+      }
+      #endif
+      return false
+    }
+
+    /**
+     Applies the last requested style size. A content-sized axis grows by the container insets SwiftUI
+     applies on it, so the frame React Native lays out still contains the inset content. The insets are
+     the UIKit ones of the controller's view, which is what SwiftUI applies; they exclude the keyboard.
+     */
+    private func applyRequestedStyleSize() {
+      guard let requested = requestedStyleSize else {
+        return
+      }
+      var horizontal = 0.0
+      var vertical = 0.0
+      #if os(iOS) || os(tvOS)
+      if appliesContainerInsets {
+        let insets = hostingController.view.safeAreaInsets
+        horizontal = Double(insets.left + insets.right)
+        vertical = Double(insets.top + insets.bottom)
+      }
+      #endif
+      let width = requested.width.map { NSNumber(value: $0.doubleValue + horizontal) }
+      let height = requested.height.map { NSNumber(value: $0.doubleValue + vertical) }
+      setStyleSize(width, height: height)
     }
 
     /**
@@ -260,13 +321,21 @@ extension ExpoSwiftUI {
 }
 
 extension UIHostingController {
-  /// Applies the `ignoreSafeArea` mode reactively, restoring the default safe area when `nil` so
-  /// clearing the prop re-enables the safe area without an app reload.
-  func setSafeAreaRegions(ignoring mode: ExpoSwiftUI.IgnoreSafeArea?) {
+  /// Sets the regions the controller applies to its root. Reactive: a change takes effect without an
+  /// app reload.
+  func setSafeAreaRegions(_ regions: SafeAreaRegions) {
     // `safeAreaRegions` needs iOS 16.4+; the precompiled xcframework targets 16.0, so no-op below it.
     guard #available(iOS 16.4, tvOS 16.4, macOS 13.3, *) else {
       return
     }
+    if safeAreaRegions != regions {
+      safeAreaRegions = regions
+    }
+  }
+
+  /// Applies the `ignoreSafeArea` mode reactively, restoring the default safe area when `nil` so
+  /// clearing the prop re-enables the safe area without an app reload.
+  func setSafeAreaRegions(ignoring mode: ExpoSwiftUI.IgnoreSafeArea?) {
     var regions: SafeAreaRegions = .all
     if let mode {
       switch mode {
@@ -278,8 +347,6 @@ extension UIHostingController {
         regions.remove(.keyboard)
       }
     }
-    if safeAreaRegions != regions {
-      safeAreaRegions = regions
-    }
+    setSafeAreaRegions(regions)
   }
 }

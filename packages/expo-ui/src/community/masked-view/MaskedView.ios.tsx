@@ -16,7 +16,7 @@ export function MaskedView(props: MaskedViewProps) {
   // and transforms because the inner views inherit layout from `absoluteFill`.
   return (
     <View {...viewProps} style={style}>
-      <Host style={StyleSheet.absoluteFill} ignoreSafeArea="all">
+      <Host style={StyleSheet.absoluteFill}>
         <Mask alignment="topLeading">
           <RNHostView>
             <View style={StyleSheet.absoluteFill}>{children}</View>

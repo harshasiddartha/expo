@@ -12,7 +12,15 @@ extension ExpoSwiftUI {
   }
 
   /**
-   Protocol for view props that support controlling safe area behavior of SwiftUI content. Used by HostView
+   Props that say which safe-area regions the hosting controller applies to its SwiftUI root.
+   */
+  public protocol SafeAreaRegionsProviding {
+    var safeAreaRegions: SafeAreaRegions { get }
+  }
+
+  /**
+   Protocol for view props that support controlling safe area behavior of SwiftUI content by removing
+   regions from SwiftUI's default. Prefer `SafeAreaRegionsProviding`.
    */
   public protocol SafeAreaControllable {
     var ignoreSafeArea: IgnoreSafeArea? { get set }

@@ -36,16 +36,44 @@ internal enum ExpoLayoutDirection: String, Enumerable {
   }
 }
 
-internal final class HostViewProps: ExpoSwiftUI.ViewProps, ExpoSwiftUI.SafeAreaControllable {
+/// Which safe-area regions SwiftUI applies inside a `Host`. Off by default: a host lays out like any
+/// React Native view and insets need to be set by the user.
+internal enum HostSafeAreaMode: String, Enumerable {
+  // Named `off` because a case called `none` reads as `Optional.none` at the call sites.
+  case off = "none"
+  case all
+  case container
+  case keyboard
+
+  var regions: SafeAreaRegions {
+    switch self {
+    case .off:
+      return []
+    case .all:
+      return .all
+    case .container:
+      return .container
+    case .keyboard:
+      return .keyboard
+    }
+  }
+}
+
+internal final class HostViewProps: ExpoSwiftUI.ViewProps, ExpoSwiftUI.SafeAreaRegionsProviding {
   @Field var useViewportSizeMeasurement: Bool = false
   @Field var colorScheme: ExpoColorScheme?
   @Field var seedColor: Color?
   @Field var layoutDirection: ExpoLayoutDirection = .leftToRight
   @Field var matchContentsHorizontal = false
   @Field var matchContentsVertical = false
-  @Field var ignoreSafeArea: ExpoSwiftUI.IgnoreSafeArea?
+  @Field var safeArea: HostSafeAreaMode = .off
   @Field var modifiers: ModifierArray?
   var onLayoutContent = EventDispatcher()
+
+  /// The hosting controller applies only these regions to the SwiftUI root, none by default.
+  var safeAreaRegions: SafeAreaRegions {
+    safeArea.regions
+  }
 }
 
 struct HostView: ExpoSwiftUI.View, ExpoSwiftUI.WithHostingView {

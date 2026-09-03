@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 
 import { generatePrimaryColorScale, globalCss } from '../webUtils';
+import { resolveHostSafeAreaMode } from './safeArea';
 import type { UniversalHostProps } from './types';
 
 const styles = StyleSheet.create({
@@ -24,6 +25,12 @@ const styles = StyleSheet.create({
     paddingTop: 'env(safe-area-inset-top, 0px)',
     paddingBottom: 'env(safe-area-inset-bottom, 0px)',
   },
+  keyboardOnly: {
+    paddingLeft: 'env(keyboard-inset-left, 0px)',
+    paddingRight: 'env(keyboard-inset-right, 0px)',
+    paddingTop: 'env(keyboard-inset-top, 0px)',
+    paddingBottom: 'env(keyboard-inset-bottom, 0px)',
+  },
 });
 
 /**
@@ -34,6 +41,7 @@ export function Host({
   children,
   colorScheme,
   seedColor,
+  safeArea,
   ignoreSafeArea,
   layoutDirection,
   matchContents = false,
@@ -53,6 +61,8 @@ export function Host({
       : layoutDirection === 'rightToLeft'
         ? 'rtl'
         : undefined;
+
+  const safeAreaMode = resolveHostSafeAreaMode(safeArea, ignoreSafeArea);
 
   const shouldMatchContents =
     typeof matchContents === 'object'
@@ -80,8 +90,9 @@ export function Host({
         }}
         style={[
           primaryColorScale,
-          ignoreSafeArea !== 'all' &&
-            (ignoreSafeArea === 'keyboard' ? styles.safeAreaWithoutKeyboard : styles.safeArea),
+          safeAreaMode === 'all' && styles.safeArea,
+          safeAreaMode === 'container' && styles.safeAreaWithoutKeyboard,
+          safeAreaMode === 'keyboard' && styles.keyboardOnly,
           shouldMatchContents
             ? styles.matchContents
             : useViewportSizeMeasurement && styles.matchViewport,

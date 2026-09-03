@@ -213,7 +213,7 @@ export function PagerView(props: PagerViewProps) {
   ];
 
   return (
-    <Host style={style ?? { flex: 1 }} ignoreSafeArea="container" {...passthrough}>
+    <Host style={style ?? { flex: 1 }} safeArea="keyboard" {...passthrough}>
       <ScrollView axes="horizontal" showsIndicators={false} modifiers={modifiers}>
         <LazyHStack spacing={0} modifiers={[scrollTargetLayout()]}>
           {pages}

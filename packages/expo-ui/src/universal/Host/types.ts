@@ -1,5 +1,9 @@
 import type { ColorSchemeName, ColorValue, ViewProps } from 'react-native';
 
+import type { HostIgnoreSafeArea, HostSafeArea } from './safeArea';
+
+export type { HostIgnoreSafeArea, HostSafeArea } from './safeArea';
+
 /**
  * Props for the [`Host`](#host) component.
  */
@@ -50,15 +54,24 @@ export interface UniversalHostProps extends ViewProps {
   layoutDirection?: 'leftToRight' | 'rightToLeft';
 
   /**
-   * Controls which safe area regions the hosting view should ignore.
-   * - `'all'`- ignores all safe area insets.
-   * - `'keyboard'` - ignores only the keyboard safe area.
+   * Lets the native UI toolkit apply its safe-area handling inside the host.
+   * On iOS, a `matchContents` axis grows by the inset SwiftUI applies. Jetpack Compose applies no
+   * insets on any axis.
+   * @default false
+   *
+   * @platform ios
+   * @platform web
+   */
+  safeArea?: HostSafeArea;
+
+  /**
+   * @deprecated Use `safeArea` instead.
    *
    * @platform android
    * @platform ios
    * @platform web
    */
-  ignoreSafeArea?: 'all' | 'keyboard';
+  ignoreSafeArea?: HostIgnoreSafeArea;
 
   /**
    * When true and no explicit size is provided, the host will use the viewport size as the proposed size for layout.

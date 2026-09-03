@@ -14,6 +14,6 @@ describe('MaskedView', () => {
       </MaskedView>
     );
 
-    expect(findNativeViewProps('HostView')?.ignoreSafeArea).toBe('all');
+    expect(findNativeViewProps('HostView')?.safeArea).toBe('none');
   });
 });
